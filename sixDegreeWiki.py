@@ -17,16 +17,26 @@ def internal_not_special(href):
 					return True
 	return False
 	
-def recusiveSearch(mainBody, maxSearch):
+def recusiveSearch(links, maxSearch):
 	if maxSearch <= 0:
 		return False
-	for link in mainBody:
-		print(link)
-		if link == 'https://en.wikipedia.org/wiki/Star_Wars':
-			print("Found it")
-			return True
-		return recusiveSearch(link, maxSearch-1)
+	for i in links: 
+		try:
+			href = str(i['href'])
+			if internal_not_special(href):
+				if href == '/wiki/Star_Wars':
+					printLink(i)
+					return True
+				#recursive call here
+				#return recusiveSearch(i, maxSearch-1)
+		except:
+			pass
 	return False
+	
+def printLink(link):
+	title = str(link['title'])
+	url = "https://en.wikipedia.org" + str(link['href'])
+	print(title + " (" + url + ")")
 
 def main():
 	# get starting url
@@ -37,24 +47,15 @@ def main():
 	#page = start
 	#print(page.text)
 	pageTitle = page.find('h1', id="firstHeading").string
-	print(pageTitle)
+	#print(pageTitle)
 	mainBody = page.find(id="bodyContent")
 	#print(mainBody)	
 	#links = mainBody.find_all('a', href=internal_not_special)
 	links = mainBody.find_all('a')
 	#for link in links:
 	#	print(internal_not_special(link.href))
-	#print(links)
-	for i in links: 
-		try:
-			href = str(i['href'])
-			#print(href)
-			if internal_not_special(href):
-				print(href)
-		except:
-			pass	
-	#s = recusiveSearch(links, 6)
-	#print(s)
+	s = recusiveSearch(links, 6)
+	print(s)
 
 if __name__ == "__main__":
 	main()
