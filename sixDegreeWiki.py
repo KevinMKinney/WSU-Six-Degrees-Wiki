@@ -1,111 +1,106 @@
+# Description of project:
+# This python script web scraps wikipedia, starting from a random wiki page (given from 'https://en.wikipedia.org/wiki/Special:Random') to the wiki page of Star Wars. It does this by using recursive depth first search (depth of 6) to find a path.
+
 import requests
 from bs4 import BeautifulSoup
 import re
 import sys
 
+# pathArray is global array that stores the path of links
 pathArray = []
-#visitedLinks = []
+# these are for internal_not_special function (prob faster)
 re_wiki = re.compile('^/wiki/')
 re_word1 = re.compile('/\w+:')
 re_pound = re.compile('#')
 
+# function that returns the url from a random Wikipedia page
 def get_random_page_url():
 	r = requests.get('https://en.wikipedia.org/wiki/Special:Random')
 	return r.url
 
+# function that checks for valid internal links (i.e. links to other wiki pages)
 def internal_not_special(href):
 	if href:
-		# This works while line 14 does not (dont know why)
-		#r = re.compile('^/wiki/')
+		# is it a Wikipedia link
 		if re_wiki.search(href):
-		#if re.compile('ˆ/wiki/').search(href):
-			#if not re.compile('/\w+:').search(href):
+			# ignore category type links
 			if not re_word1.search(href):
-				#if not re.compile('#').search(href):
 				if not re_pound.search(href):
 					return True
 	return False
 	
+# function that used DFS recusively to find a path to Star Wars 
 def recursiveSearch(links, search):
+	# init global variable(s)
 	global pathArray
-	#global visitedLinks
-	print("Search:",search)
-	if search <= 0:
-		return False
+	# iterate through internal links
 	for i in links: 
 		try:
-			#print(str(i['title']))
+			# get href of link
 			href = str(i['href'])
-			#print(href)
+			# check if link is valid
 			if internal_not_special(href):
-				#print("visited", visitedLinks)
-				#if href in visitedLinks:
-					#print('1')
-					#return recursiveSearch(findInternalLinks("https://en.wikipedia.org" + href), search-1)
-					#pass
-				#else:
-					#print(href)
+				# check if link is Star Wars
 				if href == '/wiki/Star_Wars':
-					print('FOUND')
-				#if href == '/wiki/Maoism':
+					# add to path
 					pathArray.append(i)
 					return True
 				else:
-					#print('looking at sublinks')
+					# base case / is the next recusive call valid
 					if search-1 > 0:
+						# find internal links...
 						l = findInternalLinks("https://en.wikipedia.org" + href)
+						# ...and search through them
 						if recursiveSearch(l, search-1):
+							# add link to path and stop searching only if it found Star Wars
 							pathArray.append(i)
 							return True
-					#return recusiveSearch(l, search - 1)
-					#visitedLinks.append(href)
 		except KeyError:
+			# occasionally looks at non-valid links and causes a keyError
 			pass
 		except:
+			# for testing purposes (its a bad thing if its in here)
 			e = sys.exc_info()[0]
-			print(e)
-	
+			#print(e)
+	# only return false if it could not find a path to Star Wars
 	return False
 
+# function converts url to list of internal links in that url
 def findInternalLinks(url):
+	# get contents of url
 	page = BeautifulSoup(requests.get(url).text, 'html.parser')
-	#print(page.text)
-	#pageTitle = page.find('h1', id="firstHeading").string
-	#print(pageTitle)
+	# find contents only in the main body of page
 	mainBody = page.find(id="bodyContent")
-	#print(mainBody)
-	#links = mainBody.find_all('a', href=internal_not_special)
+	# return links in main body
 	return mainBody.find_all('a')
 
 def main():
+	# init global variable(s)
 	global pathArray
-	
+	# increase recusion limit 
 	sys.setrecursionlimit(10000)
 	# get starting url
 	start = get_random_page_url()
-	prefix = "https://en.wikipedia.org"
+	# manual starting url
 	#start = "https://en.wikipedia.org/wiki/George_Lucas"
-	#start = "https://en.wikipedia.org/wiki/National_Association_of_Professional_Base_Ball_Players"
-	depth = 6
-	links = findInternalLinks(start)
-	#global pathArray = []
-	#visitedLinks = []
 	
+	# set depth of DFS
+	depth = 6
+	# find internal links in starting url
+	links = findInternalLinks(start)
+	# start searching for Star Wars	
 	s = recursiveSearch(links, depth)
-	#page = BeautifulSoup(requests.get(start).text, 'html.parser')
-	#print(page.text)
-	#pageTitle = page.find('h1', id="firstHeading").string
-	#first = {'title': pageTitle, 'href': start}
+
+	# add starting page to the path array
 	first_page = BeautifulSoup(requests.get(start).text, 'html.parser')
-
-	first = {'title': first_page.title.string, 'href': start.strip(prefix)}
-
+	first = {'title': first_page.title.string.strip("- Wikipedia"), 'href': re.sub("https://en.wikipedia.org", "", start)}
 	pathArray.append(first)
-	#print(s)
+	# reverse path array for printing
 	pathArray.reverse()
+	# print the contents of path array
+	# syntaxt is "page title" (
 	for i in range(len(pathArray)):
-		#print(' ', end='')
-		print(str(pathArray[i]['title']) + " (" + prefix + str(pathArray[i]['href']) + ")")
+		print(str(pathArray[i]['title']) + " (https://en.wikipedia.org" + str(pathArray[i]['href']) + ")")
 	
 
 if __name__ == "__main__":
