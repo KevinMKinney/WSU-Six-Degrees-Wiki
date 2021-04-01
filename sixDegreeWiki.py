@@ -90,17 +90,21 @@ def main():
 	links = findInternalLinks(start)
 	# start searching for Star Wars	
 	s = recursiveSearch(links, depth)
-
-	# add starting page to the path array
-	first_page = BeautifulSoup(requests.get(start).text, 'html.parser')
-	first = {'title': first_page.title.string.strip("- Wikipedia"), 'href': re.sub("https://en.wikipedia.org", "", start)}
-	pathArray.append(first)
-	# reverse path array for printing
-	pathArray.reverse()
-	# print the contents of path array
-	# syntaxt is "page title" (
-	for i in range(len(pathArray)):
-		print(str(pathArray[i]['title']) + " (https://en.wikipedia.org" + str(pathArray[i]['href']) + ")")
+	
+	if s:
+		# add starting page to the path array
+		first_page = BeautifulSoup(requests.get(start).text, 'html.parser')
+		first = {'title': first_page.title.string.strip("- Wikipedia"), 'href': re.sub("https://en.wikipedia.org", "", start)}
+		pathArray.append(first)
+		# reverse path array for printing
+		pathArray.reverse()
+		# print the contents of path array
+		# syntaxt is "page title" (
+		for i in range(len(pathArray)):
+			print(str(pathArray[i]['title']) + " (https://en.wikipedia.org" + str(pathArray[i]['href']) + ")")
+	else:
+		# if no path was found, tell the user
+		print("Could not find path to Star Wars")
 	
 
 if __name__ == "__main__":
